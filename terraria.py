@@ -6,10 +6,13 @@ import pygame
 import noise
 import numpy as np
 import random
+import math
 
 from configuration import *
 
 from player import Player
+from item import Item
+from block import Block
 from camera import Camera
 
 class Terraria:
@@ -27,6 +30,7 @@ class Terraria:
         self.player_height = 32  # height of the player image, TODO change and get it from alpha of sum of player pixels and item pixels
         self.camera = Camera(WINDOW_WIDTH, WINDOW_HEIGHT)
         self.selected_block = None # block selected by the player (mouse click)
+        self.interaction_distance = 3 * TILE_SIZE # distance in pixels from the player to the selected block
 
     def get_selected_block(self, mouse_x, mouse_y, camera):
         # calculate the position of the block selected by the camera and the mouse position
@@ -135,7 +139,7 @@ class Terraria:
                         elif player.vy < 0:  # collision from below
                             player.rect.y = block_rect.y + block_rect.height
                         player.vy = 0
-                        
+
 
     def draw_inventory(self, screen, inventory):
         self.slot_size = 40
@@ -156,10 +160,33 @@ class Terraria:
             # draw item in the selected slot
             if i == inventory.selected_slot and inventory.items[i] is not None:
                 item = inventory.items[i]
-                item_x = x + (self.slot_size - item.get_width()) // 2
-                item_y = self.y_offset + (self.slot_size - item.get_height()) // 2
-                screen.blit(item, (item_x, item_y))
+                item_x = x + (self.slot_size - item.image.get_width()) // 2
+                item_y = self.y_offset + (self.slot_size - item.image.get_height()) // 2
+                screen.blit(item.image, (item_x, item_y))
 
+    def hitBlock(self, block_properties, world):
+        target_x, target_y = self.selected_block
+
+        # check the hardness of the selected block and the item's strength
+        index = world[target_x, target_y]
+        if(index > 0):
+            block_hardness = block_properties[index]["hardness"]
+            
+            # check distance of the player to the block
+            distance = math.sqrt((self.character.rect.x - target_x * TILE_SIZE) ** 2 + (self.character.rect.y - target_y * TILE_SIZE) ** 2)
+            blocks = int(distance // TILE_SIZE)
+            item = self.character.inventory.items[self.character.inventory.selected_slot]
+            if blocks <= item.reach:
+
+                item_strength = self.character.held_item.strength
+
+                # increase the hit count
+                self.hits += 1
+
+                # check if the item is strong enough and the block has been hit enough times
+                if self.hits >= block_hardness // item_strength:
+                    world[target_x, target_y] = 0
+                    self.hits = 0
 
 
     def main(self):
@@ -169,10 +196,20 @@ class Terraria:
         # build player
         start_x = 100  # coordinates of the player - starting position
         start_y = self.find_ground_level(world, start_x // TILE_SIZE)
-        character = Player(start_x, start_y, "assets/character.png")  # player picture
+        self.character = Player(start_x, start_y, "assets/character.png")  # player picture
         
         # fill inventory
-        character.inventory.items[0] = pygame.image.load("assets/pickaxe.png").convert_alpha()
+        self.character.inventory.items[0] = Item("assets/pickaxe.png", 3 * TILE_SIZE, 3)
+
+        # Create a dictionary to store block properties (e.g., hardness)
+        block_properties = {
+            1: {"hardness": 3},
+            2: {"hardness": 3},
+            3: {"hardness": 5}
+        }
+
+        # Add a variable to store the number of hits
+        self.hits = 0
 
         while True:
             # events and inputs
@@ -182,95 +219,100 @@ class Terraria:
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                        character.moving_left = True
+                        self.character.moving_left = True
                     elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                        character.moving_right = True
+                        self.character.moving_right = True
                     elif event.key == pygame.K_SPACE:
-                        character.jump()
+                        self.character.jump()
                     elif event.key in [pygame.K_1, pygame.K_KP1]:
-                        character.inventory.selected_slot = 0
+                        self.character.inventory.selected_slot = 0
                     elif event.key in [pygame.K_2, pygame.K_KP2]:
-                        character.inventory.selected_slot = 1
+                        self.character.inventory.selected_slot = 1
                     elif event.key in [pygame.K_3, pygame.K_KP3]:
-                        character.inventory.selected_slot = 2
+                        self.character.inventory.selected_slot = 2
                     elif event.key in [pygame.K_4, pygame.K_KP4]:
-                        character.inventory.selected_slot = 3
+                        self.character.inventory.selected_slot = 3
                     elif event.key in [pygame.K_5, pygame.K_KP5]:
-                        character.inventory.selected_slot = 4
+                        self.character.inventory.selected_slot = 4
                     elif event.key in [pygame.K_6, pygame.K_KP6]:
-                        character.inventory.selected_slot = 5
+                        self.character.inventory.selected_slot = 5
                     elif event.key in [pygame.K_7, pygame.K_KP7]:
-                        character.inventory.selected_slot = 6
+                        self.character.inventory.selected_slot = 6
                     elif event.key in [pygame.K_8, pygame.K_KP8]:
-                        character.inventory.selected_slot = 7
+                        self.character.inventory.selected_slot = 7
                     elif event.key in [pygame.K_9, pygame.K_KP9]:
-                        character.inventory.selected_slot = 8
+                        self.character.inventory.selected_slot = 8
 
                     
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                        character.moving_left = False
+                        self.character.moving_left = False
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                        character.moving_right = False
+                        self.character.moving_right = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:  # left mouse button
                         mouse_x, mouse_y = event.pos
                         # Check if the mouse click is within the inventory area
                         if self.y_offset <= mouse_y <= self.y_offset + self.slot_size:
                             slot_clicked = (mouse_x - self.x_offset) // (self.slot_size + self.slot_gap)
-                            if 0 <= slot_clicked < character.inventory.slots:
-                                character.inventory.selected_slot = slot_clicked
-                    elif event.button == 3:  # Botón derecho del ratón
+                            if 0 <= slot_clicked < self.character.inventory.slots:
+                                self.character.inventory.selected_slot = slot_clicked
+
+                        self.hitBlock(block_properties, world)
+                            
+                    elif event.button == 3:  # right mouse button
+
                         if self.selected_block is not None:
                             target_x, target_y = self.selected_block
-                            # Mueve al personaje al centro del bloque seleccionado
-                            character.target_x = target_x * TILE_SIZE + TILE_SIZE // 2
-                            character.move_to_x(target_x * TILE_SIZE + TILE_SIZE // 2)
 
-                # update the character's held item according to the selected slot
-                character.held_item = character.inventory.items[character.inventory.selected_slot]
+                            # move the self.character towards the target block (center)
+                            self.character.target_x = target_x * TILE_SIZE + TILE_SIZE // 2
+                            self.character.move_to_x(target_x * TILE_SIZE + TILE_SIZE // 2)
+
+                # update the self.character's held item according to the selected slot
+                self.character.held_item = self.character.inventory.items[self.character.inventory.selected_slot]
 
             # game updates
 
-            # move character towards the target x position
-            if character.target_x is not None:
-                if character.moving_left or character.moving_right:
-                    character.target_x = None
+            # move self.character towards the target x position
+            if self.character.target_x is not None:
+                if self.character.moving_left or self.character.moving_right:
+                    self.character.target_x = None
                 else:
-                    distance_to_target = character.target_x - character.rect.x
+                    distance_to_target = self.character.target_x - self.character.rect.x
                     move_speed = min(abs(distance_to_target), 5)
 
-                    if character.rect.x < character.target_x:
-                        character.rect.x += move_speed
-                        character.facing_right = True
-                    elif character.rect.x > character.target_x:
-                        character.rect.x -= move_speed
-                        character.facing_right = False
+                    if self.character.rect.x < self.character.target_x:
+                        self.character.rect.x += move_speed
+                        self.character.facing_right = True
+                    elif self.character.rect.x > self.character.target_x:
+                        self.character.rect.x -= move_speed
+                        self.character.facing_right = False
                     else:
-                        character.target_x = None
+                        self.character.target_x = None
 
-                self.check_collision(character, world)
+                self.check_collision(self.character, world)
 
             else: # keyboard
-                if character.moving_left:
-                    character.rect.x -= 5
-                    self.check_collision(character, world)
-                    character.facing_right = False
-                if character.moving_right:
-                    character.rect.x += 5
-                    self.check_collision(character, world)
-                    character.facing_right = True
+                if self.character.moving_left:
+                    self.character.rect.x -= 5
+                    self.check_collision(self.character, world)
+                    self.character.facing_right = False
+                if self.character.moving_right:
+                    self.character.rect.x += 5
+                    self.check_collision(self.character, world)
+                    self.character.facing_right = True
 
 
             # gravity
-            if not character.grounded:
-                character.vy += 1  # gravity force, change that if you want to change the gravity strength
+            if not self.character.grounded:
+                self.character.vy += 1  # gravity force, change that if you want to change the gravity strength
 
             # game updates
-            character.update()
-            self.check_collision(character, world)
+            self.character.update()
+            self.check_collision(self.character, world)
 
-            self.camera.update(character)
+            self.camera.update(self.character)
             
             # update selected block by mouse selected position
             mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -283,9 +325,9 @@ class Terraria:
             # draw terrain
             self.draw_terrain(self.screen, world, self.camera)
             # draw player
-            character.draw(self.screen, self.camera)
+            self.character.draw(self.screen, self.camera)
             # draw inventory
-            self.draw_inventory(self.screen, character.inventory)    
+            self.draw_inventory(self.screen, self.character.inventory)    
 
             # flip display - frame drawing
             pygame.display.flip()

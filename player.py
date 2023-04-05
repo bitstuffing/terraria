@@ -31,13 +31,13 @@ class Player():
         if self.held_item is not None:
             item_x = self.rect.x - camera.rect.x + self.rect.width // 2
             item_y = self.rect.y - camera.rect.y + self.rect.height // 2
-
+            
             if self.facing_right:
-                flipped_item = pygame.transform.flip(self.held_item, True, False)
-                screen.blit(flipped_item, (item_x + self.image.get_width()/3, item_y - self.image.get_height()/3))
+                flipped_held_item = pygame.transform.flip(self.held_item.image, True, False)
+                screen.blit(flipped_held_item, (item_x + self.image.get_width() / 3, item_y - self.image.get_height() / 3))
             else:
-                
-                screen.blit(self.held_item, (item_x - self.image.get_width(), item_y - self.image.get_height()/3))
+                screen.blit(self.held_item.image, (item_x - self.image.get_width(), item_y - self.image.get_height() / 3))
+
 
 
     def update(self):

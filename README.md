@@ -28,22 +28,22 @@ python main.py
 
 ### TODO list
 
-[x] world generation
-[x] player
-[x] physics
-[x] camera
-[x] blocks
-[x] items inventory
-[ ] menu
-[ ] configuration
-[ ] multiplayer
-[ ] save/load
-[ ] mini map
-[ ] music
-[ ] sounds effects
-[ ] enemies
-[ ] crafting
-[ ] more
+- [x] world generation
+- [x] player
+- [x] physics
+- [x] camera
+- [x] blocks
+- [x] items inventory
+- [ ] menu
+- [ ] configuration
+- [ ] multiplayer
+- [ ] save/load
+- [ ] mini map
+- [ ] music
+- [ ] sounds effects
+- [ ] enemies
+- [ ] crafting
+- [ ] more
 
 
 ### Dev. and License

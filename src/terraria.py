@@ -8,12 +8,12 @@ import numpy as np
 import random
 import math
 
-from configuration import *
+from src.configuration import *
 
-from player import Player
-from item import Item
-from block import Block
-from camera import Camera
+from src.player import Player
+from src.item import Item
+from src.block import Block
+from src.camera import Camera
 
 class Terraria:
 

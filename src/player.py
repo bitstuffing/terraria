@@ -1,7 +1,7 @@
 import pygame
 import math
-from inventory import Inventory
-from configuration import *
+from src.inventory import Inventory
+from src.configuration import *
 
 class Player():
 

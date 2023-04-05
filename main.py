@@ -1,4 +1,4 @@
-from terraria import Terraria
+from src.terraria import Terraria
 
 if __name__ == "__main__":
     terraria = Terraria()

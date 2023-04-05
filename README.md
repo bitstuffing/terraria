@@ -6,6 +6,8 @@ Physics engines are developed based on (Pygame Platformer Game Tutorial)[https:/
 
 Currently it's a 0.1 version, so it's not a complete game, but it's a good start to know how to make games with pygame.
 
+![screenshot](https://i.ibb.co/WnyFWyj/Captura-desde-2023-04-05-17-33-17.png)
+
 ## Requirements (install dependencies)
 
 ``` 

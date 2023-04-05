@@ -1,0 +1,23 @@
+
+# Configuración
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+FPS = 60
+
+# Colores
+BLACK = (0, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (135, 206, 250)  # Sky blue
+BROWN = (139, 69, 19)  # Dirt
+GRAY = (128, 128, 128)  # Stone
+RED = (255, 0, 0)
+WHITE = (255, 255, 255)
+
+
+# Configuración del terreno
+TILE_SIZE = 16
+WORLD_WIDTH = WINDOW_WIDTH*10 // TILE_SIZE
+WORLD_HEIGHT = WINDOW_HEIGHT*10 // TILE_SIZE
+OCTAVES = 4
+FREQUENCY = 32
+AMPLITUDE = 16

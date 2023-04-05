@@ -1,7 +1,10 @@
 # Terraria clone (in pygame)
 
 Just a dummy pygame Terraria game, to people who want to learn make games with pygame.
-Physic engines are developed based on (Pygame Platformer Game Tutorial)[https://www.youtube.com/watch?v=FfWpgLFMI7w]
+
+Physics engines are developed based on (Pygame Platformer Game Tutorial)[https://www.youtube.com/watch?v=FfWpgLFMI7w]
+
+Currently it's a 0.1 version, so it's not a complete game, but it's a good start to know how to make games with pygame.
 
 ## Requirements (install dependencies)
 
@@ -29,8 +32,8 @@ python main.py
 [x] player
 [x] physics
 [x] camera
-[ ] blocks
-[ ] items inventory
+[x] blocks
+[x] items inventory
 [ ] menu
 [ ] configuration
 [ ] multiplayer
@@ -44,4 +47,5 @@ python main.py
 
 
 ### Dev. and License
+
 Developed by @bitstuffing and licensed under the GPLv3 license.

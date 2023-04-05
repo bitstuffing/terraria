@@ -45,25 +45,30 @@ class Terraria:
         
     def generate_terrain(self, width, height):
         
-        world = np.zeros((width, height), dtype=int)
+        #world = np.zeros((width, height), dtype=int)
+        bigworld = np.empty((width, height), dtype=Block)
 
         random_offset_x = random.randint(0, 1000)
         random_offset_y = random.randint(0, 1000)
 
         for y in range(height):
             for x in range(width):
+                bigworld[x, y] = Block(0)  # none
+
                 nx, ny = (x + random_offset_x) / FREQUENCY, (y + random_offset_y) / FREQUENCY
                 elevation = noise.pnoise2(nx, ny, octaves=OCTAVES) * AMPLITUDE
 
                 if y > height // 2 + int(elevation):
                     if y < height // 2 + int(elevation) + 10:  # 10 blocks of grass
-                        world[x, y] = 1  # grass
+                        bigworld[x, y] = Block(1)  # grass
                     elif y < height // 2 + int(elevation) + 40:  # 30 blocks of dirt
-                        world[x, y] = 2  # dirt
-                    else:
-                        world[x, y] = 3  # stone
+                        bigworld[x, y] = Block(2)  # dirt
+                    else: #TODO: add stone with a random number of blocks
+                        bigworld[x, y] = Block(3)  # stone
 
-        return world
+                
+    
+        return bigworld
 
 
     def draw_terrain(self, screen, world, camera):
@@ -72,34 +77,35 @@ class Terraria:
         start_y = max(0, camera.rect.top // TILE_SIZE)
         end_y = min(world.shape[1], camera.rect.bottom // TILE_SIZE + 1)
 
+        for y in range(start_y, end_y):
+            for x in range(start_x, end_x):
+                if type(world[x, y]) == Block:
+                        
+                    if world[x, y].type >= 1 and world[x, y].type <= 3:
+                        #pygame.draw.rect(screen, COLOR, (x * TILE_SIZE - camera.rect.x, y * TILE_SIZE - camera.rect.y, TILE_SIZE, TILE_SIZE))
+                        surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+                        surface.blit(world[x, y].image, (0, 0))
+                        screen.blit(surface, (x * TILE_SIZE - camera.rect.x, y * TILE_SIZE - camera.rect.y))
+
+                    # Dibujar un borde rojo alrededor de los bloques en la superficie o frontera con el cielo bajo el cursor del ratón
+                    if self.selected_block == (x, y) and (
+                        (y > 0 and world[x, y - 1] == 0) or
+                        (x > 0 and world[x - 1, y] == 0) or
+                        (x < world.shape[0] - 1 and world[x + 1, y] == 0)
+                    ) and world[x, y] != 0:
+                        pygame.draw.rect(screen, RED, (x * TILE_SIZE - camera.rect.x, y * TILE_SIZE - camera.rect.y, TILE_SIZE, TILE_SIZE), 2)
+
         # draw the selected block (if any) in red
         if self.selected_block is not None:
             x, y = self.selected_block
             pygame.draw.rect(screen, RED, (x * TILE_SIZE - camera.rect.x, y * TILE_SIZE - camera.rect.y, TILE_SIZE, TILE_SIZE), 2)
-
-        for y in range(start_y, end_y):
-            for x in range(start_x, end_x):
-                if world[x, y] == 1:
-                    pygame.draw.rect(screen, GREEN, (x * TILE_SIZE - camera.rect.x, y * TILE_SIZE - camera.rect.y, TILE_SIZE, TILE_SIZE))
-                elif world[x, y] == 2:
-                    pygame.draw.rect(screen, BROWN, (x * TILE_SIZE - camera.rect.x, y * TILE_SIZE - camera.rect.y, TILE_SIZE, TILE_SIZE))
-                elif world[x, y] == 3:
-                    pygame.draw.rect(screen, GRAY, (x * TILE_SIZE - camera.rect.x, y * TILE_SIZE - camera.rect.y, TILE_SIZE, TILE_SIZE))
-
-                # Dibujar un borde rojo alrededor de los bloques en la superficie o frontera con el cielo bajo el cursor del ratón
-                if self.selected_block == (x, y) and (
-                    (y > 0 and world[x, y - 1] == 0) or
-                    (x > 0 and world[x - 1, y] == 0) or
-                    (x < world.shape[0] - 1 and world[x + 1, y] == 0)
-                ) and world[x, y] != 0:
-                    pygame.draw.rect(screen, RED, (x * TILE_SIZE - camera.rect.x, y * TILE_SIZE - camera.rect.y, TILE_SIZE, TILE_SIZE), 2)
 
 
 
 
     def find_ground_level(self, world, x):
         for y in range(world.shape[1]):
-            if world[x, y] == 1:
+            if world[x, y].type == 1:
                 return y * TILE_SIZE - self.player_height
         return 0  # case if no ground is found
 
@@ -115,7 +121,7 @@ class Terraria:
 
         for y in range(y_min, y_max):
             for x in range(x_min, x_max):
-                if world[x, y] > 0:
+                if isinstance(world[x,y],Block) and world[x, y].type > 0:
                     block_rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
 
                     # check collision in the X axis
@@ -128,7 +134,7 @@ class Terraria:
 
         for y in range(y_min, y_max):
             for x in range(x_min, x_max):
-                if world[x, y] > 0:
+                if isinstance(world[x,y],Block) and world[x, y].type > 0:
                     block_rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
 
                     # colission in the Y axis
@@ -167,32 +173,33 @@ class Terraria:
     def hitBlock(self, block_properties, world):
         target_x, target_y = self.selected_block
 
-        # check the hardness of the selected block and the item's strength
-        index = world[target_x, target_y]
-        if(index > 0):
-            block_hardness = block_properties[index]["hardness"]
+        if type(world[target_x, target_y]) == Block:
             
-            # check distance of the player to the block
-            distance = math.sqrt((self.character.rect.x - target_x * TILE_SIZE) ** 2 + (self.character.rect.y - target_y * TILE_SIZE) ** 2)
-            blocks = int(distance // TILE_SIZE)
-            item = self.character.inventory.items[self.character.inventory.selected_slot]
-            if blocks <= item.reach:
+            # check the hardness of the selected block and the item's strength
+            index = world[target_x, target_y].type
+            if(index > 0):
+                block_hardness = block_properties[index]["hardness"]
+                
+                # check distance of the player to the block
+                distance = math.sqrt((self.character.rect.x - target_x * TILE_SIZE) ** 2 + (self.character.rect.y - target_y * TILE_SIZE) ** 2)
+                blocks = int(distance // TILE_SIZE)
+                item = self.character.inventory.items[self.character.inventory.selected_slot]
+                if item != None and blocks <= item.reach:
 
-                item_strength = self.character.held_item.strength
+                    item_strength = self.character.held_item.strength
 
-                # increase the hit count
-                self.hits += 1
+                    # increase the hit count
+                    self.hits += 1
 
-                # check if the item is strong enough and the block has been hit enough times
-                if self.hits >= block_hardness // item_strength:
-                    world[target_x, target_y] = 0
-                    self.hits = 0
+                    # check if the item is strong enough and the block has been hit enough times
+                    if self.hits >= block_hardness // item_strength:
+                        world[target_x, target_y] = 0
+                        self.hits = 0
 
 
     def main(self):
         # generate world (terrain)
         world = self.generate_terrain(WORLD_WIDTH, WORLD_HEIGHT)
-
         # build player
         start_x = 100  # coordinates of the player - starting position
         start_y = self.find_ground_level(world, start_x // TILE_SIZE)
